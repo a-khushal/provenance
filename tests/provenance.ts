@@ -81,23 +81,16 @@ describe("provenance", () => {
       .rpc();
 
     const registrationData = await program.methods
-      .verifyPrompt()
+      .verifyPrompt(Array.from(promptHash))
       .accounts({
         registration: registrationPda,
       })
-      .remainingAccounts([
-        {
-          pubkey: registrationPda,
-          isWritable: false,
-          isSigner: false,
-        },
-      ])
       .view();
 
     expect(Buffer.from(registrationData.promptHash)).to.deep.equal(promptHash);
     expect(Buffer.from(registrationData.outputHash)).to.deep.equal(outputHash);
     expect(registrationData.creator.toString()).to.equal(creator.publicKey.toString());
-    expect(registrationData.timestamp).to.be.greaterThan(0);
+    expect(registrationData.timestamp.toNumber()).to.be.greaterThan(0);
   });
 
   it("Fails when verifying non-existent prompt", async () => {
@@ -114,7 +107,7 @@ describe("provenance", () => {
 
     try {
       await program.methods
-        .verifyPrompt()
+        .verifyPrompt(Array.from(nonExistentPromptHash))
         .accounts({ registration: registrationPda })
         .remainingAccounts([
           {

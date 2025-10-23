@@ -38,10 +38,10 @@ pub struct RegisterContent<'info> {
         bump
     )]
     pub registration: Account<'info, Registration>,
-    
+
     #[account(mut)]
     pub creator: Signer<'info>,
-    
+
     pub system_program: Program<'info, System>,
 }
 
@@ -80,8 +80,12 @@ pub mod provenance {
         Ok(())
     }
 
-    pub fn verify_prompt(ctx: Context<VerifyPrompt>) -> Result<RegistrationData> {
+    pub fn verify_prompt(
+        ctx: Context<VerifyPrompt>,
+        prompt_hash: [u8; 32],
+    ) -> Result<RegistrationData> {
         let registration = &ctx.accounts.registration;
+
         Ok(RegistrationData {
             prompt_hash: registration.prompt_hash,
             output_hash: registration.output_hash,
