@@ -4,6 +4,7 @@ import { useState } from "react"
 import { useForm } from "react-hook-form"
 import { Search, Loader2, ExternalLink, CheckCircle, Copy, Check } from "lucide-react"
 import { Button } from "@/components/ui/button"
+import { useWallet } from "@solana/wallet-adapter-react"
 
 interface VerifyFormInputs {
     searchPrompt: string
@@ -29,6 +30,7 @@ export default function VerifyPage() {
     const [results, setResults] = useState<VerificationResult | null>(null)
     const [hasSearched, setHasSearched] = useState(false)
     const [copiedHash, setCopiedHash] = useState<string | null>(null)
+    const { connected } = useWallet()
 
     const copyToClipboard = (text: string, id: string) => {
         navigator.clipboard.writeText(text)
@@ -98,10 +100,10 @@ export default function VerifyPage() {
                                 />
                                 <Button
                                     onClick={handleVerify}
-                                    disabled={!searchPrompt.trim() || isLoading}
-                                    className={`shrink-0 px-4 py-2 flex items-center font-semibold transition ${searchPrompt.trim() && !isLoading
-                                            ? "bg-blue-600 hover:bg-blue-700 text-white"
-                                            : "bg-slate-700 text-slate-400 cursor-not-allowed"
+                                    disabled={!searchPrompt.trim() || isLoading || !connected}
+                                    className={`shrink-0 px-4 py-2 flex items-center font-semibold transition ${searchPrompt.trim() && !isLoading && connected
+                                        ? "bg-blue-600 hover:bg-blue-700 text-white"
+                                        : "bg-slate-700 text-slate-400 cursor-not-allowed"
                                         }`}
                                 >
                                     {isLoading ? (
@@ -119,6 +121,10 @@ export default function VerifyPage() {
                             </div>
                         </div>
                     </div>
+
+                    {!connected && (
+                        <p className="text-center text-slate-400 text-sm mt-2">Connect your wallet to verify content</p>
+                    )}
 
                     {hasSearched && (
                         <div className="mt-8">

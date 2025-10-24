@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react"
 import { Loader2, ExternalLink, Copy, Check, CheckCircle } from "lucide-react"
 import { Button } from "@/components/ui/button"
+import { useWallet } from "@solana/wallet-adapter-react"
 
 interface Registration {
     id: string
@@ -20,6 +21,7 @@ export default function LeaderboardPage() {
     const [page, setPage] = useState(1)
     const [hasMore, setHasMore] = useState(true)
     const [copiedHash, setCopiedHash] = useState<string | null>(null)
+    const { connected } = useWallet()
 
     const itemsPerPage = 10
 
@@ -91,7 +93,11 @@ export default function LeaderboardPage() {
                 </div>
 
                 <div className="bg-slate-900/30 border border-slate-700/50 rounded-lg backdrop-blur overflow-hidden">
-                    {loading && registrations.length === 0 ? (
+                    {!connected ? (
+                        <div className="flex items-center justify-center py-20">
+                            <p className="text-slate-400 text-lg">Connect your wallet to view the leaderboard</p>
+                        </div>
+                    ) : loading && registrations.length === 0 ? (
                         <div className="flex items-center justify-center py-20">
                             <Loader2 className="w-8 h-8 text-blue-400 animate-spin" />
                         </div>
@@ -154,34 +160,36 @@ export default function LeaderboardPage() {
                     )}
                 </div>
 
-                <div className="flex items-center justify-between mt-8">
-                    <div className="text-slate-400 text-sm">
-                        Page <span className="font-semibold text-white">{page}</span>
+                {connected && (
+                    <div className="flex items-center justify-between mt-8">
+                        <div className="text-slate-400 text-sm">
+                            Page <span className="font-semibold text-white">{page}</span>
+                        </div>
+                        <div className="flex gap-4">
+                            <Button
+                                onClick={() => setPage((p) => Math.max(1, p - 1))}
+                                disabled={page === 1}
+                                className="bg-slate-700 hover:bg-slate-600 disabled:opacity-50 disabled:cursor-not-allowed"
+                            >
+                                Previous
+                            </Button>
+                            <Button
+                                onClick={() => setPage((p) => p + 1)}
+                                disabled={!hasMore || loading}
+                                className="bg-blue-600 hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed"
+                            >
+                                {loading ? (
+                                    <>
+                                        <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                                        Loading...
+                                    </>
+                                ) : (
+                                    "Next"
+                                )}
+                            </Button>
+                        </div>
                     </div>
-                    <div className="flex gap-4">
-                        <Button
-                            onClick={() => setPage((p) => Math.max(1, p - 1))}
-                            disabled={page === 1}
-                            className="bg-slate-700 hover:bg-slate-600 disabled:opacity-50 disabled:cursor-not-allowed"
-                        >
-                            Previous
-                        </Button>
-                        <Button
-                            onClick={() => setPage((p) => p + 1)}
-                            disabled={!hasMore || loading}
-                            className="bg-blue-600 hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed"
-                        >
-                            {loading ? (
-                                <>
-                                    <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                                    Loading...
-                                </>
-                            ) : (
-                                "Next"
-                            )}
-                        </Button>
-                    </div>
-                </div>
+                )}
             </main>
         </div>
     )

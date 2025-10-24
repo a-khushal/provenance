@@ -6,6 +6,8 @@ import { Check, Loader2, ExternalLink, ArrowRight } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import HashDisplay from "@/components/hash-display"
 import { useWallet } from "@solana/wallet-adapter-react"
+import { useProgram } from "@/hooks/useProgram"
+import { useRegister } from "@/hooks/useRegister"
 
 type TransactionStatus = "idle" | "pending" | "success" | "error"
 
@@ -31,35 +33,59 @@ export default function RegisterPage() {
     const prompt = watch("prompt")
     const aiOutput = watch("aiOutput")
 
-    const [promptHash, setPromptHash] = useState("")
-    const [outputHash, setOutputHash] = useState("")
+    const [promptHash, setPromptHash] = useState<Uint8Array | null>(null)
+    const [outputHash, setOutputHash] = useState<Uint8Array | null>(null)
+    const [promptHashHex, setPromptHashHex] = useState("")
+    const [outputHashHex, setOutputHashHex] = useState("")
     const [transactionStatus, setTransactionStatus] = useState<TransactionStatus>("idle")
-    const [transactionHash, setTransactionHash] = useState("")
-    const [errorMessage, setErrorMessage] = useState("")
+    const [transactionHash, setTransactionHash] = useState<string>("")
+    const [errorMessage, setErrorMessage] = useState<string>("")
     const { connected, publicKey } = useWallet()
+    const program = useProgram();
+    const address = publicKey?.toBase58();
+    const { loading, error, isRegistered, transactionSignature, register: registerFunction } = useRegister(
+        program,
+        promptHash || new Uint8Array(),
+        outputHash || new Uint8Array(),
+        address || null
+    );
+
+    useEffect(() => {
+        if (transactionSignature) {
+            setTransactionStatus("success");
+            setTransactionHash(transactionSignature);
+        }
+    }, [transactionSignature]);
 
     useEffect(() => {
         if (prompt) {
-            generateHash(prompt).then(setPromptHash)
+            generateHash(prompt).then(hash => {
+                setPromptHash(hash)
+                setPromptHashHex(Array.from(hash).map(b => b.toString(16).padStart(2, '0')).join(''))
+            })
         } else {
-            setPromptHash("")
+            setPromptHash(null)
+            setPromptHashHex("")
         }
     }, [prompt])
 
     useEffect(() => {
         if (aiOutput) {
-            generateHash(aiOutput).then(setOutputHash)
+            generateHash(aiOutput).then(hash => {
+                setOutputHash(hash)
+                setOutputHashHex(Array.from(hash).map(b => b.toString(16).padStart(2, '0')).join(''))
+            })
         } else {
-            setOutputHash("")
+            setOutputHash(null)
+            setOutputHashHex("")
         }
     }, [aiOutput])
 
-    const generateHash = async (text: string): Promise<string> => {
+    const generateHash = async (text: string): Promise<Uint8Array> => {
         const encoder = new TextEncoder()
         const data = encoder.encode(text)
         const hashBuffer = await crypto.subtle.digest("SHA-256", data)
-        const hashArray = Array.from(new Uint8Array(hashBuffer))
-        return hashArray.map((b) => b.toString(16).padStart(2, "0")).join("")
+        return new Uint8Array(hashBuffer)
     }
 
     const handleRegister = async () => {
@@ -69,24 +95,20 @@ export default function RegisterPage() {
         setErrorMessage("")
 
         try {
-            await new Promise((resolve) => setTimeout(resolve, 2000))
-            const mockTxHash = "tx_" + Math.random().toString(36).substring(2, 15)
-            setTransactionHash(mockTxHash)
-            setTransactionStatus("success")
-
-            setTimeout(() => {
-                reset()
-                setPromptHash("")
-                setOutputHash("")
-                setTransactionStatus("idle")
-            }, 3000)
+            if (promptHash && outputHash && address) {
+                const result = await registerFunction();
+                if ('error' in result) {
+                    throw new Error(typeof result.error === 'string' ? result.error : 'Unknown error occurred');
+                }
+            }
         } catch (error) {
             setErrorMessage("Failed to register content. Please try again.")
             setTransactionStatus("error")
+            console.error("Registration error:", error);
         }
     }
 
-    const isFormValid = connected && isValid && prompt.trim() && aiOutput.trim()
+    const isFormValid = connected && isValid && prompt.trim() && aiOutput.trim() && promptHash !== null && outputHash !== null && address !== null
 
     return (
         <div className="min-h-screen">
@@ -102,7 +124,7 @@ export default function RegisterPage() {
                             <span className="text-slate-500">Content.</span>
                         </h1>
                         <p className="text-slate-400 text-lg leading-relaxed mt-6">
-                            Prove ownership and authenticity with an immutable 
+                            Prove ownership and authenticity with an immutable
                             on-chain record. Register your prompt and output on
                             Solana.
                         </p>
@@ -125,7 +147,7 @@ export default function RegisterPage() {
                                     placeholder="Enter the prompt you used to generate the content..."
                                     className="w-full h-32 bg-slate-900/50 border border-slate-700 rounded-lg px-4 py-3 text-white placeholder-slate-500 focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 resize-none backdrop-blur"
                                 />
-                                {promptHash && <HashDisplay label="Prompt Hash" hash={promptHash} />}
+                                {promptHashHex && <HashDisplay label="Prompt Hash" hash={promptHashHex} />}
                             </div>
 
                             <div>
@@ -135,7 +157,7 @@ export default function RegisterPage() {
                                     placeholder="Paste the AI-generated content here..."
                                     className="w-full h-32 bg-slate-900/50 border border-slate-700 rounded-lg px-4 py-3 text-white placeholder-slate-500 focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 resize-none backdrop-blur"
                                 />
-                                {outputHash && <HashDisplay label="Output Hash" hash={outputHash} />}
+                                {outputHashHex && <HashDisplay label="Output Hash" hash={outputHashHex} />}
                             </div>
 
                             {transactionStatus !== "idle" && (
@@ -160,7 +182,7 @@ export default function RegisterPage() {
                                                 <div>
                                                     <p className="text-blue-300 font-semibold">Content registered successfully!</p>
                                                     <a
-                                                        href={`https://solscan.io/tx/${transactionHash}?cluster=devnet`}
+                                                        href={`https://explorer.solana.com/tx/${transactionHash}?cluster=devnet`}
                                                         target="_blank"
                                                         rel="noopener noreferrer"
                                                         className="text-blue-400 hover:text-blue-300 text-sm flex items-center gap-1 mt-1"
@@ -189,17 +211,8 @@ export default function RegisterPage() {
                                     : "bg-slate-700 text-slate-400 cursor-not-allowed"
                                     }`}
                             >
-                                {transactionStatus === "pending" ? (
-                                    <>
-                                        <Loader2 className="w-5 h-5 mr-2 animate-spin inline" />
-                                        Registering...
-                                    </>
-                                ) : (
-                                    <>
-                                        Register Content
-                                        <ArrowRight className="w-4 h-4 ml-2 inline" />
-                                    </>
-                                )}
+                                Register Content
+                                <ArrowRight className="w-4 h-4 ml-2 inline" />
                             </Button>
 
                             {!connected && (
