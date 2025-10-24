@@ -47,7 +47,6 @@ export default function VerifyPage() {
         setHasSearched(true)
         
         try {
-            // Convert the search prompt to a Uint8Array (this is a simplified hash for demo)
             const encoder = new TextEncoder()
             const promptHash = new Uint8Array(await crypto.subtle.digest('SHA-256', encoder.encode(searchPrompt)))
             

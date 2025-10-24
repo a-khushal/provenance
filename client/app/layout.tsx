@@ -2,7 +2,6 @@ import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
 import Provider from "./provider";
 import AppBar from "@/components/app-bar";
-import { CheckCircle } from "lucide-react";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
