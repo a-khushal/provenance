@@ -2,7 +2,7 @@
 
 import { useState } from "react"
 import { useForm } from "react-hook-form"
-import { Search, Loader2, ExternalLink, CheckCircle, Copy, Check } from "lucide-react"
+import { Search, Loader2, CheckCircle, Copy, Check } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { useWallet } from "@solana/wallet-adapter-react"
 import { useVerify } from "@/hooks/useVerify"

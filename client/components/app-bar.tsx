@@ -38,8 +38,8 @@ export default function AppBar() {
                 <Link href="/verify" className="text-sm hover:text-blue-400 transition">
                     Verify
                 </Link>
-                <Link href="/leaderboard" className="text-sm hover:text-blue-400 transition">
-                    Leaderboard
+                <Link href="/registry" className="text-sm hover:text-blue-400 transition">
+                    Provenance Registry
                 </Link>
                 {mounted && <WalletMultiButton />}
             </div>

@@ -91,7 +91,7 @@ export default function Home() {
                 <TrendingUp className="w-6 h-6 text-blue-400" />
               </div>
             </div>
-            <h3 className="text-xl font-semibold mb-2">Leaderboard</h3>
+            <h3 className="text-xl font-semibold mb-2">Provenance Registry</h3>
             <p className="text-slate-400 text-sm">
               Browse all registered content and creators. Discover trending AI-generated works and their verified
               origins on Solana.

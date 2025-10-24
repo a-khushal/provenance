@@ -2,7 +2,7 @@
 
 import { Provenance } from "@/program/provenance";
 import { Program } from "@coral-xyz/anchor";
-import { useState, useEffect } from "react";
+import { useState } from "react";
 
 export const useRegister = (program: Program<Provenance> | null, promptHash: Uint8Array, aiOutputHash: Uint8Array, address: string | null) => {
     const [loading, setLoading] = useState(false);
