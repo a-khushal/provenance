@@ -1,8 +1,12 @@
+'use client'
+
 import { ArrowRight, CheckCircle, Search, TrendingUp } from "lucide-react"
 import { Button } from "@/components/ui/button"
-import Link from "next/link"
+import { useRouter } from "next/navigation"
 
 export default function Home() {
+  const router = useRouter()
+
   return (
     <>
       <div className="relative z-10 grid grid-cols-1 lg:grid-cols-2 gap-12 px-6 md:px-12 py-20 md:py-32 max-w-7xl mx-auto">
@@ -21,11 +25,11 @@ export default function Home() {
           </p>
 
           <div className="flex flex-col sm:flex-row gap-4">
-            <Button className="bg-transparent border border-slate-500 hover:border-blue-400 text-white hover:bg-blue-500/10 px-6 py-2 h-auto">
+            <Button onClick={() => router.push('/register')} className="bg-transparent border border-slate-500 hover:border-blue-400 text-white hover:bg-blue-500/10 px-6 py-2 h-auto">
               Register Content
               <ArrowRight className="w-4 h-4 ml-2" />
             </Button>
-            <Button className="bg-blue-600 hover:bg-blue-700 px-6 py-2 h-auto">
+            <Button onClick={() => router.push('/verify')} className="bg-blue-600 hover:bg-blue-700 px-6 py-2 h-auto">
               Verify Authenticity
               <ArrowRight className="w-4 h-4 ml-2" />
             </Button>
@@ -53,7 +57,7 @@ export default function Home() {
         </div>
       </div>
 
-      <div className="relative z-10 px-6 md:px-12 py-20 max-w-7xl mx-auto">
+      <div className="relative z-10 px-6 md:px-12 pb-20 max-w-7xl mx-auto">
         <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
           <div className="group p-6 border border-slate-700 rounded-lg hover:border-blue-500/50 transition bg-slate-900/30 hover:bg-slate-900/50 backdrop-blur">
             <div className="flex items-start justify-between mb-4">
