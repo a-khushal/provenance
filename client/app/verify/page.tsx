@@ -45,11 +45,13 @@ export default function VerifyPage() {
     const handleVerify = async () => {
         if (!searchPrompt.trim()) return
         setHasSearched(true)
-        
+
         try {
             const encoder = new TextEncoder()
-            const promptHash = new Uint8Array(await crypto.subtle.digest('SHA-256', encoder.encode(searchPrompt)))
-            
+            const data = encoder.encode(searchPrompt)
+            const hashBuffer = await crypto.subtle.digest('SHA-256', data.buffer as ArrayBuffer)
+            const promptHash = new Uint8Array(hashBuffer)
+
             const result = await verifyPrompt(promptHash)
             setResults(result)
         } catch (error) {

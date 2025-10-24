@@ -84,7 +84,7 @@ export default function RegisterPage() {
     const generateHash = async (text: string): Promise<Uint8Array> => {
         const encoder = new TextEncoder()
         const data = encoder.encode(text)
-        const hashBuffer = await crypto.subtle.digest("SHA-256", data)
+        const hashBuffer = await crypto.subtle.digest("SHA-256", data.buffer as ArrayBuffer)
         return new Uint8Array(hashBuffer)
     }
 
