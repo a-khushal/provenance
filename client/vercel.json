@@ -1,4 +1,3 @@
 {
-  "outputDirectory": ".next",
   "rewrites": [{ "source": "/(.*)", "destination": "/index.html" }]
 }
