@@ -4,7 +4,6 @@ import { useState } from "react"
 import { useForm } from "react-hook-form"
 import { Search, Loader2, ExternalLink, CheckCircle, Copy, Check } from "lucide-react"
 import { Button } from "@/components/ui/button"
-import WalletConnection from "@/components/wallet-connection"
 
 interface VerifyFormInputs {
     searchPrompt: string
@@ -20,15 +19,12 @@ interface VerificationResult {
 }
 
 export default function VerifyPage() {
-    const { register, watch, reset } = useForm<VerifyFormInputs>({
+    const { register, watch } = useForm<VerifyFormInputs>({
         mode: "onChange",
-        defaultValues: {
-            searchPrompt: "",
-        },
+        defaultValues: { searchPrompt: "" },
     })
 
     const searchPrompt = watch("searchPrompt")
-
     const [isLoading, setIsLoading] = useState(false)
     const [results, setResults] = useState<VerificationResult | null>(null)
     const [hasSearched, setHasSearched] = useState(false)
@@ -69,12 +65,12 @@ export default function VerifyPage() {
     }
 
     return (
-        <div className="min-h-screen bg-linear-to-br from-slate-950 via-blue-950 to-slate-900 text-white overflow-y-hidden">
-            <div className="absolute inset-0 opacity-10">
+        <div className="relative z-1 min-h-screen bg-linear-gradient-to-br from-slate-950 via-blue-950 to-slate-900 text-white">
+            <div className="absolute inset-0 z-0 opacity-10 pointer-events-none">
                 <div className="absolute inset-0 bg-[linear-gradient(0deg,transparent_24%,rgba(59,130,246,.05)_25%,rgba(59,130,246,.05)_26%,transparent_27%,transparent_74%,rgba(59,130,246,.05)_75%,rgba(59,130,246,.05)_76%,transparent_77%,transparent),linear-gradient(90deg,transparent_24%,rgba(59,130,246,.05)_25%,rgba(59,130,246,.05)_26%,transparent_27%,transparent_74%,rgba(59,130,246,.05)_75%,rgba(59,130,246,.05)_76%,transparent_77%,transparent)] bg-size-[50px_50px]" />
             </div>
 
-            <main className="relative z-10 max-w-4xl mx-auto px-6 py-12 md:px-12 md:py-20">
+            <main className="relative z-1 max-w-4xl mx-auto px-6 py-12 md:px-12 md:py-20">
                 <div className="mb-12">
                     <h1 className="text-5xl md:text-6xl font-bold leading-tight mb-4">
                         <span className="text-white">Verify</span>
@@ -90,7 +86,9 @@ export default function VerifyPage() {
 
                 <div className="space-y-6">
                     <div className="flex flex-col sm:flex-row items-start sm:items-center gap-3">
-                        <label className="block text-sm font-semibold whitespace-nowrap">Search by Prompt</label>
+                        <label className="block text-sm font-semibold whitespace-nowrap">
+                            Search by Prompt
+                        </label>
                         <div className="flex-1 w-full">
                             <div className="flex gap-3 items-center">
                                 <input
@@ -138,7 +136,9 @@ export default function VerifyPage() {
                                     <div>
                                         <p className="text-sm text-slate-400 mb-2">Creator Wallet</p>
                                         <div className="flex items-center justify-between bg-slate-800/50 border border-slate-700 rounded-lg p-3">
-                                            <span className="font-mono text-sm text-slate-200">{results.creatorAddress}</span>
+                                            <span className="font-mono text-sm text-slate-200">
+                                                {results.creatorAddress}
+                                            </span>
                                             <button
                                                 onClick={() => copyToClipboard(results.creatorAddress, "creator")}
                                                 className="p-2 hover:bg-slate-700 rounded transition"
@@ -162,7 +162,9 @@ export default function VerifyPage() {
                                     <div>
                                         <p className="text-sm text-slate-400 mb-2">Prompt Hash</p>
                                         <div className="flex items-center justify-between bg-slate-800/50 border border-slate-700 rounded-lg p-3">
-                                            <span className="font-mono text-xs text-slate-300 break-all">{results.promptHash}</span>
+                                            <span className="font-mono text-xs text-slate-300 break-all">
+                                                {results.promptHash}
+                                            </span>
                                             <button
                                                 onClick={() => copyToClipboard(results.promptHash, "prompt")}
                                                 className="p-2 hover:bg-slate-700 rounded transition shrink-0 ml-2"
@@ -179,7 +181,9 @@ export default function VerifyPage() {
                                     <div>
                                         <p className="text-sm text-slate-400 mb-2">Output Hash</p>
                                         <div className="flex items-center justify-between bg-slate-800/50 border border-slate-700 rounded-lg p-3">
-                                            <span className="font-mono text-xs text-slate-300 break-all">{results.outputHash}</span>
+                                            <span className="font-mono text-xs text-slate-300 break-all">
+                                                {results.outputHash}
+                                            </span>
                                             <button
                                                 onClick={() => copyToClipboard(results.outputHash, "output")}
                                                 className="p-2 hover:bg-slate-700 rounded transition shrink-0 ml-2"
