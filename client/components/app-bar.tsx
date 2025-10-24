@@ -21,7 +21,7 @@ export default function AppBar() {
     }, []);
 
     return (
-        <nav className="relative z-10 flex items-center justify-between px-6 py-4 md:px-12 md:py-3 border-b border-slate-700/50">
+        <nav className="relative z-10 flex items-center justify-between px-6 py-4 md:px-28 md:py-3 border-b border-slate-700/50">
             <div className="flex items-center gap-2">
                 <Link href="/" className="flex items-center gap-2">
                     <div className="w-8 h-8 bg-blue-500 rounded-lg flex items-center justify-center">
