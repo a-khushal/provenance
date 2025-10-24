@@ -13,7 +13,7 @@ import '@solana/wallet-adapter-react-ui/styles.css';
 
 export default function Provider({ children }: { children: React.ReactNode }) {
     const network = WalletAdapterNetwork.Devnet;
-    const endpoint = useMemo(() => clusterApiUrl(network), [network]);
+    const endpoint = process.env.NEXT_PUBLIC_SOLANA_CLUSTER_API_URL || useMemo(() => clusterApiUrl(network), [network]);
 
     const wallets = useMemo(
         () => [new UnsafeBurnerWalletAdapter()],
