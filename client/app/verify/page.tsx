@@ -5,18 +5,22 @@ import { useForm } from "react-hook-form"
 import { Search, Loader2, ExternalLink, CheckCircle, Copy, Check } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { useWallet } from "@solana/wallet-adapter-react"
+import { useVerify } from "@/hooks/useVerify"
+import { PublicKey } from "@solana/web3.js"
 
 interface VerifyFormInputs {
     searchPrompt: string
 }
 
 interface VerificationResult {
-    id: string
-    creatorAddress: string
-    timestamp: string
-    promptHash: string
-    outputHash: string
-    transactionHash: string
+    exists: boolean
+    registration?: {
+        promptHash: Uint8Array
+        outputHash: Uint8Array
+        creator: PublicKey
+        timestamp: number
+    }
+    error?: string
 }
 
 export default function VerifyPage() {
@@ -26,11 +30,11 @@ export default function VerifyPage() {
     })
 
     const searchPrompt = watch("searchPrompt")
-    const [isLoading, setIsLoading] = useState(false)
     const [results, setResults] = useState<VerificationResult | null>(null)
     const [hasSearched, setHasSearched] = useState(false)
     const [copiedHash, setCopiedHash] = useState<string | null>(null)
     const { connected } = useWallet()
+    const { verifyPrompt, isLoading, error: verifyError } = useVerify()
 
     const copyToClipboard = (text: string, id: string) => {
         navigator.clipboard.writeText(text)
@@ -40,29 +44,21 @@ export default function VerifyPage() {
 
     const handleVerify = async () => {
         if (!searchPrompt.trim()) return
-
-        setIsLoading(true)
         setHasSearched(true)
-
+        
         try {
-            await new Promise((resolve) => setTimeout(resolve, 1500))
-
-            if (Math.random() > 0.3) {
-                setResults({
-                    id: "result-1",
-                    creatorAddress: "9B5X...7kL2",
-                    timestamp: new Date(Date.now() - Math.random() * 7 * 24 * 60 * 60 * 1000).toLocaleString(),
-                    promptHash: "a1b2c3d4e5f6g7h8i9j0k1l2m3n4o5p6q7r8s9t0u1v2w3x4y5z6a7b8c9d0e1f",
-                    outputHash: "f1e2d3c4b5a6z7y8x9w0v1u2t3s4r5q6p7o8n9m0l1k2j3i4h5g6f7e8d9c0b1a",
-                    transactionHash: "5Zx9...kL2m",
-                })
-            } else {
-                setResults(null)
-            }
+            // Convert the search prompt to a Uint8Array (this is a simplified hash for demo)
+            const encoder = new TextEncoder()
+            const promptHash = new Uint8Array(await crypto.subtle.digest('SHA-256', encoder.encode(searchPrompt)))
+            
+            const result = await verifyPrompt(promptHash)
+            setResults(result)
         } catch (error) {
-            setResults(null)
-        } finally {
-            setIsLoading(false)
+            console.error("Verification failed:", error)
+            setResults({
+                exists: false,
+                error: "Failed to verify content. Please try again."
+            })
         }
     }
 
@@ -72,7 +68,7 @@ export default function VerifyPage() {
                 <div className="absolute inset-0 bg-[linear-gradient(0deg,transparent_24%,rgba(59,130,246,.05)_25%,rgba(59,130,246,.05)_26%,transparent_27%,transparent_74%,rgba(59,130,246,.05)_75%,rgba(59,130,246,.05)_76%,transparent_77%,transparent),linear-gradient(90deg,transparent_24%,rgba(59,130,246,.05)_25%,rgba(59,130,246,.05)_26%,transparent_27%,transparent_74%,rgba(59,130,246,.05)_75%,rgba(59,130,246,.05)_76%,transparent_77%,transparent)] bg-size-[50px_50px]" />
             </div>
 
-            <main className="relative z-1 max-w-4xl mx-auto px-6 py-12 md:px-12 md:py-20">
+            <main className="relative z-1 max-w-4xl mx-auto px-6 py-12 md:px-12 md:py-14">
                 <div className="mb-12">
                     <h1 className="text-5xl md:text-6xl font-bold leading-tight mb-4">
                         <span className="text-white">Verify</span>
@@ -134,95 +130,96 @@ export default function VerifyPage() {
                                 </div>
                             ) : results ? (
                                 <div className="space-y-6 p-6 bg-slate-900/30 border border-slate-700 rounded-lg backdrop-blur">
-                                    <div className="flex items-center gap-2 mb-4">
-                                        <CheckCircle className="w-5 h-5 text-blue-400" />
-                                        <h2 className="text-xl font-semibold">Content Found</h2>
-                                    </div>
+                                    {results?.exists && results.registration ? (
+                                        <div className="space-y-6">
+                                            <div className="flex items-center gap-3 text-green-400">
+                                                <CheckCircle className="w-5 h-5" />
+                                                <span className="font-medium">Content verified on Solana</span>
+                                            </div>
 
-                                    <div>
-                                        <p className="text-sm text-slate-400 mb-2">Creator Wallet</p>
-                                        <div className="flex items-center justify-between bg-slate-800/50 border border-slate-700 rounded-lg p-3">
-                                            <span className="font-mono text-sm text-slate-200">
-                                                {results.creatorAddress}
-                                            </span>
-                                            <button
-                                                onClick={() => copyToClipboard(results.creatorAddress, "creator")}
-                                                className="p-2 hover:bg-slate-700 rounded transition"
-                                            >
-                                                {copiedHash === "creator" ? (
-                                                    <Check className="w-4 h-4 text-blue-400" />
-                                                ) : (
-                                                    <Copy className="w-4 h-4 text-slate-400" />
-                                                )}
-                                            </button>
+                                            <div className="space-y-4">
+                                                <div>
+                                                    <div className="flex items-center justify-between mb-2">
+                                                        <h3 className="text-sm font-medium text-slate-400">Creator Address</h3>
+                                                        <button
+                                                            onClick={() => copyToClipboard(results.registration!.creator.toBase58(), 'creator')}
+                                                            className="text-slate-400 hover:text-white text-xs flex items-center gap-1"
+                                                        >
+                                                            {copiedHash === 'creator' ? (
+                                                                <><Check className="w-3 h-3" /> Copied</>
+                                                            ) : (
+                                                                <><Copy className="w-3 h-3" /> Copy</>
+                                                            )}
+                                                        </button>
+                                                    </div>
+                                                    <div className="relative">
+                                                        <div className="font-mono text-sm bg-slate-800/50 px-4 py-3 rounded-lg overflow-x-auto">
+                                                            {results.registration.creator.toBase58()}
+                                                        </div>
+                                                    </div>
+                                                </div>
+
+                                                <div className="space-y-4">
+                                                    <div>
+                                                        <div className="flex items-center justify-between mb-2">
+                                                            <h3 className="text-sm font-medium text-slate-400">Prompt Hash</h3>
+                                                            <button
+                                                                onClick={() => copyToClipboard(Array.from(results.registration!.promptHash).map(b => b.toString(16).padStart(2, '0')).join(''), 'prompt')}
+                                                                className="text-slate-400 hover:text-white text-xs flex items-center gap-1"
+                                                            >
+                                                                {copiedHash === 'prompt' ? (
+                                                                    <><Check className="w-3 h-3" /> Copied</>
+                                                                ) : (
+                                                                    <><Copy className="w-3 h-3" /> Copy</>
+                                                                )}
+                                                            </button>
+                                                        </div>
+                                                        <div className="relative">
+                                                            <div className="font-mono text-sm bg-slate-800/50 px-4 py-3 rounded-lg overflow-x-auto">
+                                                                {Array.from(results.registration.promptHash).map(b => b.toString(16).padStart(2, '0')).join('')}
+                                                            </div>
+                                                        </div>
+                                                    </div>
+
+                                                    <div>
+                                                        <div className="flex items-center justify-between mb-2">
+                                                            <h3 className="text-sm font-medium text-slate-400">Output Hash</h3>
+                                                            <button
+                                                                onClick={() => copyToClipboard(Array.from(results.registration!.outputHash).map(b => b.toString(16).padStart(2, '0')).join(''), 'output')}
+                                                                className="text-slate-400 hover:text-white text-xs flex items-center gap-1"
+                                                            >
+                                                                {copiedHash === 'output' ? (
+                                                                    <><Check className="w-3 h-3" /> Copied</>
+                                                                ) : (
+                                                                    <><Copy className="w-3 h-3" /> Copy</>
+                                                                )}
+                                                            </button>
+                                                        </div>
+                                                        <div className="relative">
+                                                            <div className="font-mono text-sm bg-slate-800/50 px-4 py-3 rounded-lg overflow-x-auto">
+                                                                {Array.from(results.registration.outputHash).map(b => b.toString(16).padStart(2, '0')).join('')}
+                                                            </div>
+                                                        </div>
+                                                    </div>
+                                                </div>
+
+                                                <div className="pt-2">
+                                                    <p className="text-sm text-slate-400">
+                                                        Registered on: {new Date(results.registration.timestamp * 1000).toLocaleString()}
+                                                    </p>
+                                                </div>
+                                            </div>
                                         </div>
-                                    </div>
-
-                                    <div>
-                                        <p className="text-sm text-slate-400 mb-2">Registration Date</p>
-                                        <div className="bg-slate-800/50 border border-slate-700 rounded-lg p-3">
-                                            <p className="text-sm text-slate-200">{results.timestamp}</p>
+                                    ) : hasSearched ? (
+                                        <div className="p-6 bg-slate-900/30 border border-slate-700 rounded-lg backdrop-blur text-center">
+                                            <p className="text-slate-400">No results found for this prompt.</p>
+                                            <p className="text-slate-500 text-sm mt-2">
+                                                Try searching for a different prompt or register new content.
+                                            </p>
                                         </div>
-                                    </div>
-
-                                    <div>
-                                        <p className="text-sm text-slate-400 mb-2">Prompt Hash</p>
-                                        <div className="flex items-center justify-between bg-slate-800/50 border border-slate-700 rounded-lg p-3">
-                                            <span className="font-mono text-xs text-slate-300 break-all">
-                                                {results.promptHash}
-                                            </span>
-                                            <button
-                                                onClick={() => copyToClipboard(results.promptHash, "prompt")}
-                                                className="p-2 hover:bg-slate-700 rounded transition shrink-0 ml-2"
-                                            >
-                                                {copiedHash === "prompt" ? (
-                                                    <Check className="w-4 h-4 text-blue-400" />
-                                                ) : (
-                                                    <Copy className="w-4 h-4 text-slate-400" />
-                                                )}
-                                            </button>
-                                        </div>
-                                    </div>
-
-                                    <div>
-                                        <p className="text-sm text-slate-400 mb-2">Output Hash</p>
-                                        <div className="flex items-center justify-between bg-slate-800/50 border border-slate-700 rounded-lg p-3">
-                                            <span className="font-mono text-xs text-slate-300 break-all">
-                                                {results.outputHash}
-                                            </span>
-                                            <button
-                                                onClick={() => copyToClipboard(results.outputHash, "output")}
-                                                className="p-2 hover:bg-slate-700 rounded transition shrink-0 ml-2"
-                                            >
-                                                {copiedHash === "output" ? (
-                                                    <Check className="w-4 h-4 text-blue-400" />
-                                                ) : (
-                                                    <Copy className="w-4 h-4 text-slate-400" />
-                                                )}
-                                            </button>
-                                        </div>
-                                    </div>
-
-                                    <div className="pt-4 border-t border-slate-700">
-                                        <a
-                                            href={`https://solscan.io/tx/${results.transactionHash}?cluster=devnet`}
-                                            target="_blank"
-                                            rel="noopener noreferrer"
-                                            className="inline-flex items-center gap-2 text-blue-400 hover:text-blue-300 font-semibold transition"
-                                        >
-                                            View on Solana Explorer
-                                            <ExternalLink className="w-4 h-4" />
-                                        </a>
-                                    </div>
+                                    ) : null}
                                 </div>
-                            ) : (
-                                <div className="p-6 bg-slate-900/30 border border-slate-700 rounded-lg backdrop-blur text-center">
-                                    <p className="text-slate-400">No results found for this prompt.</p>
-                                    <p className="text-slate-500 text-sm mt-2">
-                                        Try searching for a different prompt or register new content.
-                                    </p>
-                                </div>
-                            )}
+                            ) : null}
                         </div>
                     )}
                 </div>
