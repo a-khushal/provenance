@@ -13,6 +13,14 @@ export interface RegistryEntry {
     timestamp: number
 }
 
+export interface CreatorStats {
+    creator: PublicKey
+    totalRegistrations: number
+    firstRegistration: number
+    latestRegistration: number
+    registrations: RegistryEntry[]
+}
+
 const MAX_RETRIES = 3
 const BASE_DELAY = 1000
 const MAX_DELAY = 30000
@@ -23,6 +31,7 @@ export const useRegistry = () => {
     const [isLoading, setIsLoading] = useState(true)
     const [error, setError] = useState<string | null>(null)
     const [entries, setEntries] = useState<RegistryEntry[]>([])
+    const [selectedCreator, setSelectedCreator] = useState<PublicKey | null>(null)
     const lastRequestTime = useRef<number>(0)
     const retryCount = useRef<number>(0)
     const isRequesting = useRef<boolean>(false)
@@ -41,6 +50,49 @@ export const useRegistry = () => {
     const sleep = (ms: number): Promise<void> => {
         return new Promise(resolve => setTimeout(resolve, ms))
     }
+
+    const getCreatorStats = useCallback((entries: RegistryEntry[]): CreatorStats[] => {
+        const creatorMap = new Map<string, RegistryEntry[]>()
+
+        entries.forEach(entry => {
+            const creatorKey = entry.creator.toBase58()
+            if (!creatorMap.has(creatorKey)) {
+                creatorMap.set(creatorKey, [])
+            }
+            creatorMap.get(creatorKey)!.push(entry)
+        })
+
+        const stats: CreatorStats[] = []
+        creatorMap.forEach((registrations, creatorKey) => {
+            const creator = new PublicKey(creatorKey)
+            const timestamps = registrations.map(r => r.timestamp)
+
+            stats.push({
+                creator,
+                totalRegistrations: registrations.length,
+                firstRegistration: Math.min(...timestamps),
+                latestRegistration: Math.max(...timestamps),
+                registrations: registrations.sort((a, b) => b.timestamp - a.timestamp)
+            })
+        })
+
+        return stats.sort((a, b) => b.totalRegistrations - a.totalRegistrations)
+    }, [])
+
+    const getFilteredEntries = useCallback((): RegistryEntry[] => {
+        if (!selectedCreator) {
+            return entries
+        }
+        return entries.filter(entry => entry.creator.equals(selectedCreator))
+    }, [entries, selectedCreator])
+
+    const getCreators = useCallback((): PublicKey[] => {
+        const creatorSet = new Set<string>()
+        entries.forEach(entry => {
+            creatorSet.add(entry.creator.toBase58())
+        })
+        return Array.from(creatorSet).map(key => new PublicKey(key))
+    }, [entries])
 
     const fetchData = useCallback(async (force = false) => {
         if (!program) return;
@@ -127,9 +179,15 @@ export const useRegistry = () => {
 
     return {
         entries,
+        filteredEntries: getFilteredEntries(),
         isLoading,
         error,
-        refetch: fetchData
+        refetch: fetchData,
+        selectedCreator,
+        setSelectedCreator,
+        creatorStats: getCreatorStats(entries),
+        creators: getCreators(),
+        clearCreatorFilter: () => setSelectedCreator(null)
     }
 }
 
