@@ -13,12 +13,13 @@ interface VerifyFormInputs {
 
 interface VerificationResult {
     exists: boolean
-    registration?: {
+    registrations?: Array<{
+        registrationPk: PublicKey
         promptHash: Uint8Array
         outputHash: Uint8Array
         creator: PublicKey
         timestamp: number
-    }
+    }>
     error?: string
 }
 
@@ -125,84 +126,87 @@ export default function VerifyPage() {
                                 </div>
                             ) : results ? (
                                 <div className="space-y-6 p-6 bg-slate-900/30 border border-slate-700 rounded-lg backdrop-blur">
-                                    {results?.exists && results.registration ? (
+                                    {results?.exists && results.registrations ? (
                                         <div className="space-y-6">
                                             <div className="flex items-center gap-3 text-green-400">
                                                 <CheckCircle className="w-5 h-5" />
-                                                <span className="font-medium">Content verified on Solana</span>
+                                                <span className="font-medium">
+                                                    Content verified on Solana ({results.registrations.length} registration{results.registrations.length > 1 ? 's' : ''})
+                                                </span>
                                             </div>
 
-                                            <div className="space-y-4">
-                                                <div>
-                                                    <div className="flex items-center justify-between mb-2">
-                                                        <h3 className="text-sm font-medium text-slate-400">Creator Address</h3>
-                                                        <button
-                                                            onClick={() => copyToClipboard(results.registration!.creator.toBase58(), 'creator')}
-                                                            className="text-slate-400 hover:text-white text-xs flex items-center gap-1"
-                                                        >
-                                                            {copiedHash === 'creator' ? (
-                                                                <><Check className="w-3 h-3" /> Copied</>
-                                                            ) : (
-                                                                <><Copy className="w-3 h-3" /> Copy</>
-                                                            )}
-                                                        </button>
-                                                    </div>
-                                                    <div className="relative">
-                                                        <div className="font-mono text-sm bg-slate-800/50 px-4 py-3 rounded-lg overflow-x-auto">
-                                                            {results.registration.creator.toBase58()}
+                                            <div className="space-y-6">
+                                                {results.registrations.map((registration, index) => (
+                                                    <div key={registration.registrationPk.toBase58()} className="p-4 bg-slate-800/30 border border-slate-600 rounded-lg">
+                                                        <div className="flex items-center justify-between mb-3">
+                                                            <h4 className="text-sm font-medium text-slate-300">
+                                                                Registration #{index + 1}
+                                                            </h4>
+                                                            <span className="text-xs text-slate-500">
+                                                                {new Date(registration.timestamp * 1000).toLocaleString()}
+                                                            </span>
                                                         </div>
-                                                    </div>
-                                                </div>
 
-                                                <div className="space-y-4">
-                                                    <div>
-                                                        <div className="flex items-center justify-between mb-2">
-                                                            <h3 className="text-sm font-medium text-slate-400">Prompt Hash</h3>
-                                                            <button
-                                                                onClick={() => copyToClipboard(Array.from(results.registration!.promptHash).map(b => b.toString(16).padStart(2, '0')).join(''), 'prompt')}
-                                                                className="text-slate-400 hover:text-white text-xs flex items-center gap-1"
-                                                            >
-                                                                {copiedHash === 'prompt' ? (
-                                                                    <><Check className="w-3 h-3" /> Copied</>
-                                                                ) : (
-                                                                    <><Copy className="w-3 h-3" /> Copy</>
-                                                                )}
-                                                            </button>
-                                                        </div>
-                                                        <div className="relative">
-                                                            <div className="font-mono text-sm bg-slate-800/50 px-4 py-3 rounded-lg overflow-x-auto">
-                                                                {Array.from(results.registration.promptHash).map(b => b.toString(16).padStart(2, '0')).join('')}
+                                                        <div className="space-y-3">
+                                                            <div>
+                                                                <div className="flex items-center justify-between mb-2">
+                                                                    <h5 className="text-xs font-medium text-slate-400">Creator Address</h5>
+                                                                    <button
+                                                                        onClick={() => copyToClipboard(registration.creator.toBase58(), `creator-${index}`)}
+                                                                        className="text-slate-400 hover:text-white text-xs flex items-center gap-1"
+                                                                    >
+                                                                        {copiedHash === `creator-${index}` ? (
+                                                                            <><Check className="w-3 h-3" /> Copied</>
+                                                                        ) : (
+                                                                            <><Copy className="w-3 h-3" /> Copy</>
+                                                                        )}
+                                                                    </button>
+                                                                </div>
+                                                                <div className="font-mono text-xs bg-slate-700/50 px-3 py-2 rounded overflow-x-auto">
+                                                                    {registration.creator.toBase58()}
+                                                                </div>
+                                                            </div>
+
+                                                            <div>
+                                                                <div className="flex items-center justify-between mb-2">
+                                                                    <h5 className="text-xs font-medium text-slate-400">Prompt Hash</h5>
+                                                                    <button
+                                                                        onClick={() => copyToClipboard(Array.from(registration.promptHash).map(b => b.toString(16).padStart(2, '0')).join(''), `prompt-${index}`)}
+                                                                        className="text-slate-400 hover:text-white text-xs flex items-center gap-1"
+                                                                    >
+                                                                        {copiedHash === `prompt-${index}` ? (
+                                                                            <><Check className="w-3 h-3" /> Copied</>
+                                                                        ) : (
+                                                                            <><Copy className="w-3 h-3" /> Copy</>
+                                                                        )}
+                                                                    </button>
+                                                                </div>
+                                                                <div className="font-mono text-xs bg-slate-700/50 px-3 py-2 rounded overflow-x-auto">
+                                                                    {Array.from(registration.promptHash).map(b => b.toString(16).padStart(2, '0')).join('')}
+                                                                </div>
+                                                            </div>
+
+                                                            <div>
+                                                                <div className="flex items-center justify-between mb-2">
+                                                                    <h5 className="text-xs font-medium text-slate-400">Output Hash</h5>
+                                                                    <button
+                                                                        onClick={() => copyToClipboard(Array.from(registration.outputHash).map(b => b.toString(16).padStart(2, '0')).join(''), `output-${index}`)}
+                                                                        className="text-slate-400 hover:text-white text-xs flex items-center gap-1"
+                                                                    >
+                                                                        {copiedHash === `output-${index}` ? (
+                                                                            <><Check className="w-3 h-3" /> Copied</>
+                                                                        ) : (
+                                                                            <><Copy className="w-3 h-3" /> Copy</>
+                                                                        )}
+                                                                    </button>
+                                                                </div>
+                                                                <div className="font-mono text-xs bg-slate-700/50 px-3 py-2 rounded overflow-x-auto">
+                                                                    {Array.from(registration.outputHash).map(b => b.toString(16).padStart(2, '0')).join('')}
+                                                                </div>
                                                             </div>
                                                         </div>
                                                     </div>
-
-                                                    <div>
-                                                        <div className="flex items-center justify-between mb-2">
-                                                            <h3 className="text-sm font-medium text-slate-400">Output Hash</h3>
-                                                            <button
-                                                                onClick={() => copyToClipboard(Array.from(results.registration!.outputHash).map(b => b.toString(16).padStart(2, '0')).join(''), 'output')}
-                                                                className="text-slate-400 hover:text-white text-xs flex items-center gap-1"
-                                                            >
-                                                                {copiedHash === 'output' ? (
-                                                                    <><Check className="w-3 h-3" /> Copied</>
-                                                                ) : (
-                                                                    <><Copy className="w-3 h-3" /> Copy</>
-                                                                )}
-                                                            </button>
-                                                        </div>
-                                                        <div className="relative">
-                                                            <div className="font-mono text-sm bg-slate-800/50 px-4 py-3 rounded-lg overflow-x-auto">
-                                                                {Array.from(results.registration.outputHash).map(b => b.toString(16).padStart(2, '0')).join('')}
-                                                            </div>
-                                                        </div>
-                                                    </div>
-                                                </div>
-
-                                                <div className="pt-2">
-                                                    <p className="text-sm text-slate-400">
-                                                        Registered on: {new Date(results.registration.timestamp * 1000).toLocaleString()}
-                                                    </p>
-                                                </div>
+                                                ))}
                                             </div>
                                         </div>
                                     ) : hasSearched ? (

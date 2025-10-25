@@ -8,13 +8,13 @@ import type { Provenance } from "@/program/provenance";
 
 interface VerificationResult {
     exists: boolean;
-    registration?: {
+    registrations?: Array<{
         registrationPk: PublicKey;
         creator: PublicKey;
         promptHash: Uint8Array;
         outputHash: Uint8Array;
         timestamp: number;
-    };
+    }>;
     error?: string;
 }
 
@@ -56,18 +56,25 @@ export const useVerify = () => {
                     return { exists: false };
                 }
 
-                const firstRegPk = promptIndex.registrations[0];
-                const reg = await (program as Program<Provenance>).account.registration.fetch(firstRegPk);
-
-                return { 
-                    exists: true, 
-                    registration: {
-                        registrationPk: firstRegPk,
-                        creator: reg.creator,
-                        promptHash: new Uint8Array(reg.promptHash),
-                        outputHash: new Uint8Array(reg.outputHash),
-                        timestamp: Number(reg.timestamp),
+                const allRegistrations = [];
+                for (const regPk of promptIndex.registrations) {
+                    try {
+                        const reg = await (program as Program<Provenance>).account.registration.fetch(regPk);
+                        allRegistrations.push({
+                            registrationPk: regPk,
+                            creator: reg.creator,
+                            promptHash: new Uint8Array(reg.promptHash),
+                            outputHash: new Uint8Array(reg.outputHash),
+                            timestamp: Number(reg.timestamp),
+                        });
+                    } catch (err) {
+                        console.warn(`Failed to fetch registration ${regPk.toBase58()}:`, err);
                     }
+                }
+
+                return {
+                    exists: true,
+                    registrations: allRegistrations
                 };
             } catch (err) {
                 const errorMessage = err instanceof Error ? err.message : "Verification failed";
