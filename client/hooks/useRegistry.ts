@@ -1,4 +1,6 @@
-import { useCallback, useState } from "react"
+"use client"
+
+import { useCallback, useEffect, useRef, useState } from "react"
 import { PublicKey } from "@solana/web3.js"
 import { Program } from "@coral-xyz/anchor"
 import { useProgram } from "./useProgram"
@@ -14,28 +16,23 @@ export interface RegistryEntry {
 
 export const useRegistry = () => {
     const program = useProgram()
-    const { publicKey } = useWallet()
-    const [isLoading, setIsLoading] = useState(false)
+    const [isLoading, setIsLoading] = useState(true)
     const [error, setError] = useState<string | null>(null)
     const [entries, setEntries] = useState<RegistryEntry[]>([])
-    const [hasFetched, setHasFetched] = useState(false)
+    const hasFetched = useRef(false)
 
-    const fetchRegistry = useCallback(async () => {
-        if (!program) {
-            setError("Program not initialized")
-            return []
-        }
-
-        if (hasFetched) return entries
-        setHasFetched(true)
-
-        setIsLoading(true)
-        setError(null)
+    const fetchData = useCallback(async () => {
+        if (!program || hasFetched.current) return;
+        
+        hasFetched.current = true;
+        setIsLoading(true);
+        setError(null);
 
         try {
+            console.log("Fetching registry data...");
             const registrations = await (program as Program<Provenance>).account.registration.all()
 
-            const registryData = registrations
+            const registryData: RegistryEntry[] = registrations
                 .map((reg) => ({
                     promptHash: new Uint8Array(reg.account.promptHash),
                     outputHash: new Uint8Array(reg.account.outputHash),
@@ -44,23 +41,26 @@ export const useRegistry = () => {
                 }))
                 .sort((a, b) => b.timestamp - a.timestamp)
 
-            setEntries(registryData)
-            return registryData
+            setEntries(registryData);
+            return registryData;
         } catch (err) {
-            console.error("Error fetching registry:", err)
-            const errorMessage = err instanceof Error ? err.message : "Failed to fetch registry data"
-            setError(errorMessage)
-            return []
+            console.error("Error fetching registry:", err);
+            setError("Failed to load registry data. Please try again later.");
+            return [];
         } finally {
-            setIsLoading(false)
+            setIsLoading(false);
         }
-    }, [program, hasFetched, entries])
+    }, [program]);
+
+    useEffect(() => {
+        fetchData();
+    }, [fetchData]);
 
     return {
         entries,
         isLoading,
         error,
-        fetchRegistry,
+        refetch: fetchData
     }
 }
 

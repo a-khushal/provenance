@@ -6,15 +6,14 @@ import { Button } from "@/components/ui/button"
 import { useWallet } from "@solana/wallet-adapter-react"
 import { useRegistry } from "@/hooks/useRegistry"
 
-export default function RegistryPage() {
-    const { entries, isLoading, error, fetchRegistry } = useRegistry()
-    const [copiedHash, setCopiedHash] = useState<string | null>(null)
-    const { connected } = useWallet()
+const HASH_DISPLAY_LENGTH = 12
 
-    useEffect(() => {
-        if (!connected) return
-        fetchRegistry()
-    }, [connected, fetchRegistry])
+export default function RegistryPage() {
+    const { connected } = useWallet()
+    const { entries, isLoading, error, refetch } = useRegistry()
+    const [copiedHash, setCopiedHash] = useState<string | null>(null)
+    const [page, setPage] = useState(1)
+    const pageSize = 10
 
     const copyToClipboard = (text: string, hash: string) => {
         navigator.clipboard.writeText(text)
@@ -22,7 +21,7 @@ export default function RegistryPage() {
         setTimeout(() => setCopiedHash(null), 2000)
     }
 
-    const truncateHash = (hash: Uint8Array, length: number = 8) => {
+    const truncateHash = (hash: Uint8Array, length: number = HASH_DISPLAY_LENGTH) => {
         const hex = Array.from(hash).map(b => b.toString(16).padStart(2, '0')).join('')
         return `${hex.substring(0, length)}...${hex.substring(hex.length - length)}`
     }
@@ -32,6 +31,9 @@ export default function RegistryPage() {
         return date.toLocaleDateString() + " " + date.toLocaleTimeString()
     }
 
+    const totalPages = Math.ceil(entries.length / pageSize)
+    const paginatedEntries = entries.slice((page - 1) * pageSize, page * pageSize)
+
     return (
         <div className="min-h-screen bg-linear-gradient-to-br from-slate-950 via-blue-950 to-slate-900 text-white overflow-hidden">
             <div className="absolute inset-0 opacity-10">
@@ -39,23 +41,35 @@ export default function RegistryPage() {
             </div>
 
             <main className="relative z-10 max-w-7xl mx-auto px-6 py-12 md:px-12 md:py-20">
-                <div className="mb-12">
-                    <h1 className="text-5xl md:text-6xl font-bold leading-tight mb-4">
-                        <span className="text-white">Recent</span>
-                        <br />
-                        <span className="text-slate-400">Registrations</span>
-                    </h1>
-                    <p className="text-slate-400 text-lg leading-relaxed max-w-md mt-6">
-                        View all content registered on Provenance. Every registration is immutable and verifiable on Solana.
-                    </p>
+                <div className="flex flex-col md:flex-row md:items-center justify-between gap-6 mb-12">
+                    <div>
+                        <h1 className="text-5xl md:text-6xl font-bold leading-tight mb-4">
+                            <span className="text-white">Recent</span>
+                            <br />
+                            <span className="text-slate-400">Registrations</span>
+                        </h1>
+                        <p className="text-slate-400 text-lg leading-relaxed max-w-md">
+                            View all content registered on Provenance. Every registration is immutable and verifiable on Solana.
+                        </p>
+                    </div>
+                    <Button
+                        onClick={() => refetch()}
+                        disabled={isLoading}
+                        className="bg-blue-600 hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed self-start md:self-auto cursor-pointer"
+                    >
+                        {isLoading ? (
+                            <>
+                                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                                Refreshing...
+                            </>
+                        ) : (
+                            'Refresh Registry'
+                        )}
+                    </Button>
                 </div>
 
                 <div className="bg-slate-900/30 border border-slate-700/50 rounded-lg backdrop-blur overflow-hidden">
-                    {!connected ? (
-                        <div className="flex items-center justify-center py-20">
-                            <p className="text-slate-400 text-lg">Connect your wallet to view the registry</p>
-                        </div>
-                    ) : isLoading ? (
+                    {isLoading ? (
                         <div className="flex items-center justify-center py-20">
                             <Loader2 className="w-8 h-8 text-blue-400 animate-spin" />
                         </div>
@@ -69,8 +83,11 @@ export default function RegistryPage() {
                         </div>
                     ) : (
                         <div className="divide-y divide-slate-700/50">
-                            {entries.map((entry, index) => (
-                                <div key={`${entry.creator.toBase58()}-${entry.timestamp}`} className="p-6 hover:bg-slate-800/30 transition-colors">
+                            {paginatedEntries.map((entry, index) => (
+                                <div
+                                    key={`${entry.creator.toBase58()}-${entry.timestamp}`}
+                                    className="p-6 hover:bg-slate-800/30 transition-colors"
+                                >
                                     <div className="space-y-4">
                                         <div className="flex items-center justify-between">
                                             <div className="flex items-center gap-2">
@@ -80,11 +97,11 @@ export default function RegistryPage() {
                                                 </span>
                                                 <button
                                                     onClick={() =>
-                                                        copyToClipboard(entry.creator.toBase58(), `creator-${index}`)
+                                                        copyToClipboard(entry.creator.toBase58(), `creator-${(page - 1) * pageSize + index}`)
                                                     }
                                                     className="text-slate-400 hover:text-white text-xs flex items-center gap-1"
                                                 >
-                                                    {copiedHash === `creator-${index}` ? (
+                                                    {copiedHash === `creator-${(page - 1) * pageSize + index}` ? (
                                                         <><Check className="w-3 h-3" /> Copied</>
                                                     ) : (
                                                         <><Copy className="w-3 h-3" /> Copy</>
@@ -95,7 +112,7 @@ export default function RegistryPage() {
                                             </div>
                                             <div className="flex items-center gap-2">
                                                 <span className="text-xs bg-slate-800/50 px-2 py-1 rounded">
-                                                    #{index + 1}
+                                                    #{(page - 1) * pageSize + index + 1}
                                                 </span>
                                             </div>
                                         </div>
@@ -104,10 +121,17 @@ export default function RegistryPage() {
                                             <div className="flex items-center justify-between">
                                                 <span className="text-sm font-medium text-slate-300">Prompt Hash</span>
                                                 <button
-                                                    onClick={() => copyToClipboard(Array.from(entry.promptHash).map(b => b.toString(16).padStart(2, '0')).join(''), `prompt-${index}`)}
+                                                    onClick={() =>
+                                                        copyToClipboard(
+                                                            Array.from(entry.promptHash)
+                                                                .map(b => b.toString(16).padStart(2, '0'))
+                                                                .join(''),
+                                                            `prompt-${(page - 1) * pageSize + index}`
+                                                        )
+                                                    }
                                                     className="text-slate-400 hover:text-white text-xs flex items-center gap-1"
                                                 >
-                                                    {copiedHash === `prompt-${index}` ? (
+                                                    {copiedHash === `prompt-${(page - 1) * pageSize + index}` ? (
                                                         <><Check className="w-3 h-3" /> Copied</>
                                                     ) : (
                                                         <><Copy className="w-3 h-3" /> Copy</>
@@ -115,7 +139,7 @@ export default function RegistryPage() {
                                                 </button>
                                             </div>
                                             <div className="font-mono text-sm bg-slate-800/50 px-4 py-2 rounded-lg overflow-x-auto">
-                                                {truncateHash(entry.promptHash, 12)}
+                                                {truncateHash(entry.promptHash)}
                                             </div>
                                         </div>
 
@@ -123,10 +147,17 @@ export default function RegistryPage() {
                                             <div className="flex items-center justify-between">
                                                 <span className="text-sm font-medium text-slate-300">Output Hash</span>
                                                 <button
-                                                    onClick={() => copyToClipboard(Array.from(entry.outputHash).map(b => b.toString(16).padStart(2, '0')).join(''), `output-${index}`)}
+                                                    onClick={() =>
+                                                        copyToClipboard(
+                                                            Array.from(entry.outputHash)
+                                                                .map(b => b.toString(16).padStart(2, '0'))
+                                                                .join(''),
+                                                            `output-${(page - 1) * pageSize + index}`
+                                                        )
+                                                    }
                                                     className="text-slate-400 hover:text-white text-xs flex items-center gap-1"
                                                 >
-                                                    {copiedHash === `output-${index}` ? (
+                                                    {copiedHash === `output-${(page - 1) * pageSize + index}` ? (
                                                         <><Check className="w-3 h-3" /> Copied</>
                                                     ) : (
                                                         <><Copy className="w-3 h-3" /> Copy</>
@@ -134,7 +165,7 @@ export default function RegistryPage() {
                                                 </button>
                                             </div>
                                             <div className="font-mono text-sm bg-slate-800/50 px-4 py-2 rounded-lg overflow-x-auto">
-                                                {truncateHash(entry.outputHash, 12)}
+                                                {truncateHash(entry.outputHash)}
                                             </div>
                                         </div>
                                     </div>
@@ -144,22 +175,22 @@ export default function RegistryPage() {
                     )}
                 </div>
 
-                {connected && (
+                {connected && totalPages > 1 && (
                     <div className="flex items-center justify-between mt-8">
                         <div className="text-slate-400 text-sm">
-                            Page <span className="font-semibold text-white">{1}</span>
+                            Page <span className="font-semibold text-white">{page}</span> of {totalPages}
                         </div>
                         <div className="flex gap-4">
                             <Button
-                                onClick={() => { }}
-                                disabled={true}
+                                onClick={() => setPage(prev => Math.max(prev - 1, 1))}
+                                disabled={page === 1}
                                 className="bg-slate-700 hover:bg-slate-600 disabled:opacity-50 disabled:cursor-not-allowed"
                             >
                                 Previous
                             </Button>
                             <Button
-                                onClick={() => { }}
-                                disabled={true}
+                                onClick={() => setPage(prev => Math.min(prev + 1, totalPages))}
+                                disabled={page === totalPages}
                                 className="bg-blue-600 hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed"
                             >
                                 Next

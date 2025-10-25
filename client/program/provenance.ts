@@ -60,6 +60,35 @@ export type Provenance = {
           }
         },
         {
+          "name": "promptIndex",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  112,
+                  114,
+                  111,
+                  109,
+                  112,
+                  116,
+                  95,
+                  105,
+                  110,
+                  100,
+                  101,
+                  120
+                ]
+              },
+              {
+                "kind": "arg",
+                "path": "promptHash"
+              }
+            ]
+          }
+        },
+        {
           "name": "creator",
           "writable": true,
           "signer": true
@@ -104,30 +133,25 @@ export type Provenance = {
       ],
       "accounts": [
         {
-          "name": "registration",
+          "name": "promptIndex",
           "pda": {
             "seeds": [
               {
                 "kind": "const",
                 "value": [
+                  112,
                   114,
-                  101,
-                  103,
-                  105,
-                  115,
-                  116,
-                  114,
-                  97,
-                  116,
-                  105,
                   111,
-                  110
+                  109,
+                  112,
+                  116,
+                  95,
+                  105,
+                  110,
+                  100,
+                  101,
+                  120
                 ]
-              },
-              {
-                "kind": "account",
-                "path": "registration.creator",
-                "account": "registration"
               },
               {
                 "kind": "arg",
@@ -149,13 +173,24 @@ export type Provenance = {
         }
       ],
       "returns": {
-        "defined": {
-          "name": "registrationData"
-        }
+        "vec": "pubkey"
       }
     }
   ],
   "accounts": [
+    {
+      "name": "promptIndex",
+      "discriminator": [
+        67,
+        102,
+        174,
+        217,
+        33,
+        247,
+        7,
+        159
+      ]
+    },
     {
       "name": "registration",
       "discriminator": [
@@ -183,6 +218,13 @@ export type Provenance = {
         2,
         148
       ]
+    }
+  ],
+  "errors": [
+    {
+      "code": 6000,
+      "name": "promptNotFound",
+      "msg": "No registration found for this prompt"
     }
   ],
   "types": [
@@ -221,7 +263,7 @@ export type Provenance = {
       }
     },
     {
-      "name": "registration",
+      "name": "promptIndex",
       "type": {
         "kind": "struct",
         "fields": [
@@ -235,27 +277,16 @@ export type Provenance = {
             }
           },
           {
-            "name": "outputHash",
+            "name": "registrations",
             "type": {
-              "array": [
-                "u8",
-                32
-              ]
+              "vec": "pubkey"
             }
-          },
-          {
-            "name": "creator",
-            "type": "pubkey"
-          },
-          {
-            "name": "timestamp",
-            "type": "i64"
           }
         ]
       }
     },
     {
-      "name": "registrationData",
+      "name": "registration",
       "type": {
         "kind": "struct",
         "fields": [

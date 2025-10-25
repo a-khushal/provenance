@@ -54,6 +54,35 @@
           }
         },
         {
+          "name": "prompt_index",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  112,
+                  114,
+                  111,
+                  109,
+                  112,
+                  116,
+                  95,
+                  105,
+                  110,
+                  100,
+                  101,
+                  120
+                ]
+              },
+              {
+                "kind": "arg",
+                "path": "prompt_hash"
+              }
+            ]
+          }
+        },
+        {
           "name": "creator",
           "writable": true,
           "signer": true
@@ -98,30 +127,25 @@
       ],
       "accounts": [
         {
-          "name": "registration",
+          "name": "prompt_index",
           "pda": {
             "seeds": [
               {
                 "kind": "const",
                 "value": [
+                  112,
                   114,
-                  101,
-                  103,
-                  105,
-                  115,
-                  116,
-                  114,
-                  97,
-                  116,
-                  105,
                   111,
-                  110
+                  109,
+                  112,
+                  116,
+                  95,
+                  105,
+                  110,
+                  100,
+                  101,
+                  120
                 ]
-              },
-              {
-                "kind": "account",
-                "path": "registration.creator",
-                "account": "Registration"
               },
               {
                 "kind": "arg",
@@ -143,13 +167,24 @@
         }
       ],
       "returns": {
-        "defined": {
-          "name": "RegistrationData"
-        }
+        "vec": "pubkey"
       }
     }
   ],
   "accounts": [
+    {
+      "name": "PromptIndex",
+      "discriminator": [
+        67,
+        102,
+        174,
+        217,
+        33,
+        247,
+        7,
+        159
+      ]
+    },
     {
       "name": "Registration",
       "discriminator": [
@@ -177,6 +212,13 @@
         2,
         148
       ]
+    }
+  ],
+  "errors": [
+    {
+      "code": 6000,
+      "name": "PromptNotFound",
+      "msg": "No registration found for this prompt"
     }
   ],
   "types": [
@@ -215,7 +257,7 @@
       }
     },
     {
-      "name": "Registration",
+      "name": "PromptIndex",
       "type": {
         "kind": "struct",
         "fields": [
@@ -229,27 +271,16 @@
             }
           },
           {
-            "name": "output_hash",
+            "name": "registrations",
             "type": {
-              "array": [
-                "u8",
-                32
-              ]
+              "vec": "pubkey"
             }
-          },
-          {
-            "name": "creator",
-            "type": "pubkey"
-          },
-          {
-            "name": "timestamp",
-            "type": "i64"
           }
         ]
       }
     },
     {
-      "name": "RegistrationData",
+      "name": "Registration",
       "type": {
         "kind": "struct",
         "fields": [
