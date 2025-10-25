@@ -219,6 +219,11 @@
       "code": 6000,
       "name": "PromptNotFound",
       "msg": "No registration found for this prompt"
+    },
+    {
+      "code": 6001,
+      "name": "Unauthorized",
+      "msg": "You are not authorized to perform this action"
     }
   ],
   "types": [

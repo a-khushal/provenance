@@ -225,6 +225,11 @@ export type Provenance = {
       "code": 6000,
       "name": "promptNotFound",
       "msg": "No registration found for this prompt"
+    },
+    {
+      "code": 6001,
+      "name": "unauthorized",
+      "msg": "You are not authorized to perform this action"
     }
   ],
   "types": [

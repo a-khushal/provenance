@@ -1,8 +1,13 @@
 import { Provenance } from "@/program/provenance";
-import { Program } from "@coral-xyz/anchor";
+import { Program, BN } from "@coral-xyz/anchor";
 import { useState } from "react";
 import { PublicKey, SystemProgram } from "@solana/web3.js";
 import { useWallet } from "@solana/wallet-adapter-react";
+
+type RegisterResult = {
+    signature?: string;
+    error?: string;
+};
 
 export const useRegister = (
     program: Program<Provenance> | null,
@@ -15,9 +20,8 @@ export const useRegister = (
     const [isRegistered, setIsRegistered] = useState(false);
     const [transactionSignature, setTransactionSignature] = useState<string | null>(null);
 
-    const register = async (): Promise<{ signature?: string; error?: string }> => {
+    const register = async (): Promise<RegisterResult> => {
         if (!program || !wallet.publicKey) return { error: "Program or wallet not connected" };
-
         if (!wallet.signTransaction) {
             return { error: "Wallet does not support signing" };
         }
@@ -39,18 +43,18 @@ export const useRegister = (
             const signature = await program.methods
                 .registerContent(Array.from(promptHash), Array.from(aiOutputHash))
                 .accountsStrict({
-                    creator: wallet.publicKey,
                     registration: registrationPda,
                     promptIndex: promptIndexPda,
+                    creator: wallet.publicKey,
                     systemProgram: SystemProgram.programId,
                 })
                 .rpc({
                     skipPreflight: false,
-                    commitment: "confirmed"
+                    commitment: 'confirmed'
                 });
 
-            setIsRegistered(true);
             setTransactionSignature(signature);
+            setIsRegistered(true);
             return { signature };
         } catch (err: any) {
             const msg = err instanceof Error ? err.message : "An unknown error occurred";

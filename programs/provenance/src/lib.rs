@@ -43,7 +43,7 @@ pub struct ContentRegistered {
 #[instruction(prompt_hash: [u8; 32])]
 pub struct RegisterContent<'info> {
     #[account(
-        init,
+        init_if_needed,
         payer = creator,
         space = 8 + Registration::INIT_SPACE,
         seeds = [b"registration", creator.key().as_ref(), prompt_hash.as_ref()],
@@ -88,31 +88,33 @@ pub mod provenance {
         let registration = &mut ctx.accounts.registration;
         let prompt_index = &mut ctx.accounts.prompt_index;
         let creator = ctx.accounts.creator.key();
+        let current_time = Clock::get()?.unix_timestamp;
+        let registration_key = registration.key();
 
-        registration.prompt_hash = prompt_hash;
-        registration.output_hash = output_hash;
-        registration.creator = creator;
-        registration.timestamp = Clock::get()?.unix_timestamp;
+        if registration.creator == Pubkey::default() {
+            registration.prompt_hash = prompt_hash;
+            registration.output_hash = output_hash;
+            registration.creator = creator;
+            registration.timestamp = current_time;
 
-        if prompt_index.prompt_hash == [0u8; 32] {
-            prompt_index.prompt_hash = prompt_hash;
-        }
+            if prompt_index.registrations.is_empty() {
+                prompt_index.prompt_hash = prompt_hash;
+            }
 
-        if !prompt_index
-            .registrations
-            .iter()
-            .any(|pk| pk == registration.to_account_info().key)
-        {
-            prompt_index
-                .registrations
-                .push(*registration.to_account_info().key);
+            if !prompt_index.registrations.contains(&registration_key) {
+                prompt_index.registrations.push(registration_key);
+            }
+        } else {
+            require_keys_eq!(registration.creator, creator, CustomError::Unauthorized);
+            registration.output_hash = output_hash;
+            registration.timestamp = current_time;
         }
 
         emit!(ContentRegistered {
             prompt_hash,
             output_hash,
             creator,
-            timestamp: registration.timestamp,
+            timestamp: current_time,
         });
 
         Ok(())
@@ -134,4 +136,7 @@ pub mod provenance {
 pub enum CustomError {
     #[msg("No registration found for this prompt")]
     PromptNotFound,
+
+    #[msg("You are not authorized to perform this action")]
+    Unauthorized,
 }
