@@ -4,7 +4,6 @@ import { useCallback, useEffect, useRef, useState } from "react"
 import { PublicKey } from "@solana/web3.js"
 import { Program } from "@coral-xyz/anchor"
 import { useProgram } from "./useProgram"
-import { useWallet } from "@solana/wallet-adapter-react"
 import type { Provenance } from "@/program/provenance"
 
 export interface RegistryEntry {
@@ -19,12 +18,13 @@ export const useRegistry = () => {
     const [isLoading, setIsLoading] = useState(true)
     const [error, setError] = useState<string | null>(null)
     const [entries, setEntries] = useState<RegistryEntry[]>([])
-    const hasFetched = useRef(false)
+    const fetchData = useCallback(async (force = false) => {
+        if (!program) return;
 
-    const fetchData = useCallback(async () => {
-        if (!program || hasFetched.current) return;
-        
-        hasFetched.current = true;
+        if (!force) {
+            setIsLoading(true);
+        }
+
         setIsLoading(true);
         setError(null);
 
@@ -48,7 +48,9 @@ export const useRegistry = () => {
             setError("Failed to load registry data. Please try again later.");
             return [];
         } finally {
-            setIsLoading(false);
+            if (!force) {
+                setIsLoading(false);
+            }
         }
     }, [program]);
 

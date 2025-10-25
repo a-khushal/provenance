@@ -2,14 +2,16 @@
 
 import { useEffect, useState } from "react"
 import { useForm } from "react-hook-form"
-import { Check, Loader2, ExternalLink, ArrowRight } from "lucide-react"
+import { Check, Loader2, ExternalLink, ArrowRight, Users, FileText } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import HashDisplay from "@/components/hash-display"
 import { useWallet } from "@solana/wallet-adapter-react"
 import { useProgram } from "@/hooks/useProgram"
 import { useRegister } from "@/hooks/useRegister"
+import BatchRegistration from "@/components/batch-registration"
 
 type TransactionStatus = "idle" | "pending" | "success" | "error"
+type RegistrationMode = "single" | "batch"
 
 interface RegisterFormInputs {
     prompt: string
@@ -33,6 +35,7 @@ export default function RegisterPage() {
     const prompt = watch("prompt")
     const aiOutput = watch("aiOutput")
 
+    const [registrationMode, setRegistrationMode] = useState<RegistrationMode>("single")
     const [promptHash, setPromptHash] = useState<Uint8Array | null>(null)
     const [outputHash, setOutputHash] = useState<Uint8Array | null>(null)
     const [promptHashHex, setPromptHashHex] = useState("")
@@ -105,7 +108,6 @@ export default function RegisterPage() {
             const result = await registerFunction();
             
             if ('error' in result) {
-                // Check if it's a duplicate registration
                 if (result.error?.includes('already been processed') || 
                     result.error?.includes('already been registered')) {
                     setTransactionStatus("success");
@@ -115,7 +117,6 @@ export default function RegisterPage() {
                 throw new Error(result.error || 'Registration failed');
             }
 
-            // Success case
             setTransactionStatus("success");
             setSuccessMessage("Successfully registered content!");
             
@@ -158,7 +159,35 @@ export default function RegisterPage() {
                             </div>
                         )}
 
-                        <div className="space-y-8">
+                        <div className="mb-8">
+                            <div className="flex bg-slate-900/50 border border-slate-700 rounded-lg p-1">
+                                <button
+                                    onClick={() => setRegistrationMode("single")}
+                                    className={`flex-1 flex items-center justify-center gap-2 py-3 px-4 rounded-md transition ${
+                                        registrationMode === "single"
+                                            ? "bg-blue-600 text-white"
+                                            : "text-slate-400 hover:text-white"
+                                    }`}
+                                >
+                                    <FileText className="w-4 h-4" />
+                                    Single Registration
+                                </button>
+                                <button
+                                    onClick={() => setRegistrationMode("batch")}
+                                    className={`flex-1 flex items-center justify-center gap-2 py-3 px-4 rounded-md transition ${
+                                        registrationMode === "batch"
+                                            ? "bg-blue-600 text-white"
+                                            : "text-slate-400 hover:text-white"
+                                    }`}
+                                >
+                                    <Users className="w-4 h-4" />
+                                    Batch Registration
+                                </button>
+                            </div>
+                        </div>
+
+                        {registrationMode === "single" ? (
+                            <div className="space-y-8">
                             <div>
                                 <label className="block text-sm font-semibold mb-3">Your Prompt</label>
                                 <textarea
@@ -238,6 +267,9 @@ export default function RegisterPage() {
                                 <p className="text-center text-slate-400 text-sm">Connect your wallet to register content</p>
                             )}
                         </div>
+                        ) : (
+                            <BatchRegistration />
+                        )}
                     </div>
                 </div>
             </main>

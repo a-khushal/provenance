@@ -8,6 +8,148 @@
   },
   "instructions": [
     {
+      "name": "batch_register_content",
+      "discriminator": [
+        35,
+        169,
+        198,
+        197,
+        149,
+        186,
+        37,
+        86
+      ],
+      "accounts": [
+        {
+          "name": "creator",
+          "writable": true,
+          "signer": true
+        },
+        {
+          "name": "system_program",
+          "address": "11111111111111111111111111111111"
+        }
+      ],
+      "args": [
+        {
+          "name": "registration_data",
+          "type": {
+            "vec": {
+              "defined": {
+                "name": "RegistrationData"
+              }
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "batch_register_item",
+      "discriminator": [
+        240,
+        151,
+        180,
+        202,
+        250,
+        20,
+        202,
+        181
+      ],
+      "accounts": [
+        {
+          "name": "registration",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  114,
+                  101,
+                  103,
+                  105,
+                  115,
+                  116,
+                  114,
+                  97,
+                  116,
+                  105,
+                  111,
+                  110
+                ]
+              },
+              {
+                "kind": "account",
+                "path": "creator"
+              },
+              {
+                "kind": "arg",
+                "path": "prompt_hash"
+              }
+            ]
+          }
+        },
+        {
+          "name": "prompt_index",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  112,
+                  114,
+                  111,
+                  109,
+                  112,
+                  116,
+                  95,
+                  105,
+                  110,
+                  100,
+                  101,
+                  120
+                ]
+              },
+              {
+                "kind": "arg",
+                "path": "prompt_hash"
+              }
+            ]
+          }
+        },
+        {
+          "name": "creator",
+          "writable": true,
+          "signer": true
+        },
+        {
+          "name": "system_program",
+          "address": "11111111111111111111111111111111"
+        }
+      ],
+      "args": [
+        {
+          "name": "prompt_hash",
+          "type": {
+            "array": [
+              "u8",
+              32
+            ]
+          }
+        },
+        {
+          "name": "output_hash",
+          "type": {
+            "array": [
+              "u8",
+              32
+            ]
+          }
+        }
+      ]
+    },
+    {
       "name": "register_content",
       "discriminator": [
         170,
@@ -224,6 +366,16 @@
       "code": 6001,
       "name": "Unauthorized",
       "msg": "You are not authorized to perform this action"
+    },
+    {
+      "code": 6002,
+      "name": "EmptyBatch",
+      "msg": "Batch registration cannot be empty"
+    },
+    {
+      "code": 6003,
+      "name": "BatchTooLarge",
+      "msg": "Batch size too large (max 10 items)"
     }
   ],
   "types": [
@@ -286,6 +438,40 @@
     },
     {
       "name": "Registration",
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "prompt_hash",
+            "type": {
+              "array": [
+                "u8",
+                32
+              ]
+            }
+          },
+          {
+            "name": "output_hash",
+            "type": {
+              "array": [
+                "u8",
+                32
+              ]
+            }
+          },
+          {
+            "name": "creator",
+            "type": "pubkey"
+          },
+          {
+            "name": "timestamp",
+            "type": "i64"
+          }
+        ]
+      }
+    },
+    {
+      "name": "RegistrationData",
       "type": {
         "kind": "struct",
         "fields": [
