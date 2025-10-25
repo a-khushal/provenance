@@ -8,7 +8,20 @@ import type { Provenance } from "@/program/provenance";
 
 export const useProgram = () => {
     const { wallet, signTransaction, signAllTransactions, publicKey } = useWallet();
-    const connection = new Connection(clusterApiUrl("devnet"));
+
+    const connection = new Connection(clusterApiUrl("devnet"), {
+        commitment: "confirmed",
+        confirmTransactionInitialTimeout: 60000,
+        fetch: (url, options) => {
+            return new Promise((resolve, reject) => {
+                setTimeout(() => {
+                    fetch(url, options)
+                        .then(resolve)
+                        .catch(reject);
+                }, 100);
+            });
+        }
+    });
 
     if (!wallet || !publicKey || !signTransaction || !signAllTransactions) return null;
 
@@ -17,7 +30,11 @@ export const useProgram = () => {
         signTransaction,
         signAllTransactions,
     };
-    const provider = new AnchorProvider(connection, signer, {});
+    const provider = new AnchorProvider(connection, signer, {
+        commitment: "confirmed",
+        skipPreflight: false,
+        preflightCommitment: "confirmed"
+    });
     setProvider(provider);
 
     const program = new Program(idl as Idl, provider) as Program<Provenance>;

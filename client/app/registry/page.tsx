@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useEffect } from "react"
+import { useState } from "react"
 import { Loader2, Copy, Check } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { useWallet } from "@solana/wallet-adapter-react"
@@ -74,8 +74,16 @@ export default function RegistryPage() {
                             <Loader2 className="w-8 h-8 text-blue-400 animate-spin" />
                         </div>
                     ) : error ? (
-                        <div className="flex items-center justify-center py-20 text-red-400">
-                            {error}
+                        <div className="flex flex-col items-center justify-center py-20 text-center">
+                            <div className="text-red-400 mb-4">
+                                {error}
+                            </div>
+                            <Button
+                                onClick={() => refetch(true)}
+                                className="bg-blue-600 hover:bg-blue-700"
+                            >
+                                Try Again
+                            </Button>
                         </div>
                     ) : entries.length === 0 ? (
                         <div className="flex items-center justify-center py-20">
@@ -85,7 +93,7 @@ export default function RegistryPage() {
                         <div className="divide-y divide-slate-700/50">
                             {paginatedEntries.map((entry, index) => (
                                 <div
-                                    key={`${entry.creator.toBase58()}-${entry.timestamp}`}
+                                    key={`${entry.creator.toBase58()}-${entry.timestamp}-${index}`}
                                     className="p-6 hover:bg-slate-800/30 transition-colors"
                                 >
                                     <div className="space-y-4">
