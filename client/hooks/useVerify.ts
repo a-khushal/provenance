@@ -4,15 +4,15 @@ import { useCallback, useState } from "react";
 import { PublicKey } from "@solana/web3.js";
 import { Program } from "@coral-xyz/anchor";
 import { useProgram } from "./useProgram";
-import { useWallet } from "@solana/wallet-adapter-react";
 import type { Provenance } from "@/program/provenance";
 
 interface VerificationResult {
     exists: boolean;
     registration?: {
+        registrationPk: PublicKey;
+        creator: PublicKey;
         promptHash: Uint8Array;
         outputHash: Uint8Array;
-        creator: PublicKey;
         timestamp: number;
     };
     error?: string;
@@ -20,73 +20,65 @@ interface VerificationResult {
 
 export const useVerify = () => {
     const program = useProgram();
-    const { publicKey } = useWallet();
     const [isLoading, setIsLoading] = useState(false);
     const [error, setError] = useState<string | null>(null);
 
     const verifyPrompt = useCallback(
         async (promptHash: Uint8Array): Promise<VerificationResult> => {
-            if (!program || !publicKey) {
-                return {
-                    exists: false,
-                    error: "Program or wallet not connected"
-                };
+            if (!program) {
+                return { exists: false, error: "Program not connected" };
             }
 
             if (promptHash.length !== 32) {
-                return {
-                    exists: false,
-                    error: "Invalid prompt hash length. Expected 32 bytes."
-                };
+                return { exists: false, error: "Invalid prompt hash length" };
             }
 
             setIsLoading(true);
             setError(null);
 
             try {
-                const [registrationPDA] = PublicKey.findProgramAddressSync(
-                    [
-                        Buffer.from("registration"),
-                        publicKey.toBuffer(),
-                        promptHash,
-                    ],
+                const [promptIndexPDA] = PublicKey.findProgramAddressSync(
+                    [Buffer.from("prompt_index"), Buffer.from(promptHash)],
                     program.programId
                 );
 
-                const registration = await (program as Program<Provenance>).account.registration.fetch(registrationPDA);
+                let promptIndex;
+                try {
+                    promptIndex = await (program as Program<Provenance>).account.promptIndex.fetch(promptIndexPDA);
+                } catch (e) {
+                    if ((e as Error).message.includes("Account does not exist")) {
+                        return { exists: false };
+                    }
+                    throw e;
+                }
 
-                const promptHashBytes = new Uint8Array(registration.promptHash);
-                const outputHashBytes = new Uint8Array(registration.outputHash);
-
-                return {
-                    exists: true,
-                    registration: {
-                        promptHash: promptHashBytes,
-                        outputHash: outputHashBytes,
-                        creator: registration.creator,
-                        timestamp: registration.timestamp.toNumber(),
-                    },
-                };
-            } catch (err) {
-                if ((err as Error).message.includes("Account does not exist")) {
+                if (!promptIndex?.registrations?.length) {
                     return { exists: false };
                 }
 
-                console.error("Verification error:", err);
-                return {
-                    exists: false,
-                    error: (err as Error).message || "Failed to verify content"
+                const firstRegPk = promptIndex.registrations[0];
+                const reg = await (program as Program<Provenance>).account.registration.fetch(firstRegPk);
+
+                return { 
+                    exists: true, 
+                    registration: {
+                        registrationPk: firstRegPk,
+                        creator: reg.creator,
+                        promptHash: new Uint8Array(reg.promptHash),
+                        outputHash: new Uint8Array(reg.outputHash),
+                        timestamp: Number(reg.timestamp),
+                    }
                 };
+            } catch (err) {
+                const errorMessage = err instanceof Error ? err.message : "Verification failed";
+                setError(errorMessage);
+                return { exists: false, error: errorMessage };
             } finally {
                 setIsLoading(false);
             }
         },
-        [program, publicKey]
+        [program]
     );
 
-    return {
-        verifyPrompt,
-        isLoading,
-        error,
-    };
+    return { verifyPrompt, isLoading, error };
 };

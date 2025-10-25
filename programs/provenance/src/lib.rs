@@ -15,12 +15,12 @@ pub struct Registration {
 #[derive(InitSpace)]
 pub struct PromptIndex {
     pub prompt_hash: [u8; 32],
-    #[max_len(10000)]
+    #[max_len(100)]
     pub registrations: Vec<Pubkey>,
 }
 
 impl PromptIndex {
-    pub const LEN: usize = 8 + 32 + (4 + 10000 * 32);
+    pub const LEN: usize = 8 + 32 + (4 + 100 * 32);
 }
 
 #[derive(AnchorSerialize, AnchorDeserialize, Clone)]

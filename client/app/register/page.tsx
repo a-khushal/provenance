@@ -37,9 +37,10 @@ export default function RegisterPage() {
     const [outputHash, setOutputHash] = useState<Uint8Array | null>(null)
     const [promptHashHex, setPromptHashHex] = useState("")
     const [outputHashHex, setOutputHashHex] = useState("")
+    const [successMessage, setSuccessMessage] = useState("")
+    const [errorMessage, setErrorMessage] = useState("")
     const [transactionStatus, setTransactionStatus] = useState<TransactionStatus>("idle")
     const [transactionHash, setTransactionHash] = useState<string>("")
-    const [errorMessage, setErrorMessage] = useState<string>("")
     const { connected, publicKey } = useWallet()
     const program = useProgram();
     const address = publicKey?.toBase58();
@@ -47,7 +48,6 @@ export default function RegisterPage() {
         program,
         promptHash || new Uint8Array(),
         outputHash || new Uint8Array(),
-        address || null
     );
 
     useEffect(() => {
@@ -89,21 +89,40 @@ export default function RegisterPage() {
     }
 
     const handleRegister = async () => {
-        if (!connected || !isValid) return
+        if (!connected || !isValid) {
+            setErrorMessage("Please connect your wallet and fill in all fields");
+            return;
+        }
 
-        setTransactionStatus("pending")
-        setErrorMessage("")
+        setTransactionStatus("pending");
+        setErrorMessage("");
 
         try {
-            if (promptHash && outputHash && address) {
-                const result = await registerFunction();
-                if ('error' in result) {
-                    throw new Error(typeof result.error === 'string' ? result.error : 'Unknown error occurred');
-                }
+            if (!promptHash || !outputHash || !address) {
+                throw new Error("Missing required data for registration");
             }
+
+            const result = await registerFunction();
+            
+            if ('error' in result) {
+                // Check if it's a duplicate registration
+                if (result.error?.includes('already been processed') || 
+                    result.error?.includes('already been registered')) {
+                    setTransactionStatus("success");
+                    setSuccessMessage("This content has already been registered!");
+                    return;
+                }
+                throw new Error(result.error || 'Registration failed');
+            }
+
+            // Success case
+            setTransactionStatus("success");
+            setSuccessMessage("Successfully registered content!");
+            
         } catch (error) {
-            setErrorMessage("Failed to register content. Please try again.")
-            setTransactionStatus("error")
+            const errorMessage = error instanceof Error ? error.message : "Failed to register content";
+            setErrorMessage(errorMessage);
+            setTransactionStatus("error");
             console.error("Registration error:", error);
         }
     }
