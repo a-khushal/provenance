@@ -2,10 +2,11 @@
 
 import { useState } from "react"
 import { useForm } from "react-hook-form"
-import { Search, Loader2, CheckCircle, Copy, Check } from "lucide-react"
+import { Search, Loader2, CheckCircle, Copy, Check, FileText } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { useVerify } from "@/hooks/useVerify"
 import { PublicKey } from "@solana/web3.js"
+import CertificateVerifier from "@/components/certificate-verifier"
 
 interface VerifyFormInputs {
     searchPrompt: string
@@ -33,6 +34,7 @@ export default function VerifyPage() {
     const [results, setResults] = useState<VerificationResult | null>(null)
     const [hasSearched, setHasSearched] = useState(false)
     const [copiedHash, setCopiedHash] = useState<string | null>(null)
+    const [showCertificateVerifier, setShowCertificateVerifier] = useState(false)
     const { verifyPrompt, isLoading, error: verifyError } = useVerify()
 
     const copyToClipboard = (text: string, id: string) => {
@@ -80,6 +82,16 @@ export default function VerifyPage() {
                     <p className="text-slate-400 text-lg leading-relaxed max-w-md mt-6">
                         Search for registered content on the Solana blockchain. Verify authenticity and view registration details.
                     </p>
+                    <div className="mt-6">
+                        <Button
+                            onClick={() => setShowCertificateVerifier(true)}
+                            variant="outline"
+                            className="border-slate-500 text-black hover:bg-slate-700 hover:text-white"
+                        >
+                            <FileText className="w-4 h-4 mr-2" />
+                            Verify Certificate
+                        </Button>
+                    </div>
                 </div>
 
                 <div className="space-y-6">
@@ -223,6 +235,30 @@ export default function VerifyPage() {
                     )}
                 </div>
             </main>
+
+            {showCertificateVerifier && (
+                <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+                    <div className="bg-slate-900 border border-slate-700 rounded-lg max-w-4xl w-full max-h-[90vh] overflow-y-auto">
+                        <div className="p-6">
+                            <CertificateVerifier
+                                onVerified={(certificateData) => {
+                                    console.log('Certificate verified:', certificateData)
+                                    setShowCertificateVerifier(false)
+                                }}
+                            />
+                            <div className="mt-6 flex justify-end">
+                                <Button
+                                    onClick={() => setShowCertificateVerifier(false)}
+                                    variant="outline"
+                                    className="border-slate-500 text-black hover:bg-slate-700 hover:text-white"
+                                >
+                                    Close
+                                </Button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            )}
         </div>
     )
 }

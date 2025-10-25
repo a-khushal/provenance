@@ -1,11 +1,12 @@
 "use client"
 
 import { useState } from "react"
-import { Loader2, Copy, Check, Users, Filter } from "lucide-react"
+import { Loader2, Copy, Check, Users, Filter, FileText } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { useWallet } from "@solana/wallet-adapter-react"
 import { useRegistry } from "@/hooks/useRegistry"
 import CreatorProfile from "@/components/creator-profile"
+import CertificateExport from "@/components/certificate-export"
 
 const HASH_DISPLAY_LENGTH = 12
 
@@ -25,6 +26,8 @@ export default function RegistryPage() {
     const [copiedHash, setCopiedHash] = useState<string | null>(null)
     const [page, setPage] = useState(1)
     const [showCreatorProfile, setShowCreatorProfile] = useState(false)
+    const [selectedEntry, setSelectedEntry] = useState<any>(null)
+    const [showCertificateExport, setShowCertificateExport] = useState(false)
     const pageSize = 10
 
     const copyToClipboard = (text: string, hash: string) => {
@@ -180,6 +183,18 @@ export default function RegistryPage() {
                                                 <span className="text-xs bg-slate-800/50 px-2 py-1 rounded">
                                                     #{(page - 1) * pageSize + index + 1}
                                                 </span>
+                                                <Button
+                                                    onClick={() => {
+                                                        setSelectedEntry(entry)
+                                                        setShowCertificateExport(true)
+                                                    }}
+                                                    size="sm"
+                                                    variant="outline"
+                                                    className="border-slate-500 text-black hover:bg-slate-700 hover:text-white text-xs"
+                                                >
+                                                    <FileText className="w-3 h-3 mr-1" />
+                                                    Export
+                                                </Button>
                                             </div>
                                         </div>
 
@@ -270,6 +285,22 @@ export default function RegistryPage() {
                     </div>
                 )}
             </main>
+
+            {showCertificateExport && selectedEntry && (
+                <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+                    <div className="bg-slate-900 border border-slate-700 rounded-lg max-w-4xl w-full max-h-[90vh] overflow-y-auto">
+                        <div className="p-6">
+                            <CertificateExport
+                                entry={selectedEntry}
+                                onClose={() => {
+                                    setShowCertificateExport(false)
+                                    setSelectedEntry(null)
+                                }}
+                            />
+                        </div>
+                    </div>
+                </div>
+            )}
         </div>
     )
 }
